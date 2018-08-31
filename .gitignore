@@ -3,6 +3,10 @@
 # dependencies
 /node_modules
 .env
+*.jpg
+*.png
+*.psd
+*.tiff
 
 # testing
 /coverage
