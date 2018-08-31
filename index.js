@@ -11,9 +11,18 @@ const PSD = require("psd");
 const tinify = require("tinify");
 const pngToJpeg = require("png-to-jpeg");
 const sharp = require("sharp");
-const port = 9001;
+const util = require("util");
+const bodyParser = require("body-parser");
+const debounce = require("lodash/debounce");
+const {
+  createFilename,
+  generateImages,
+  generateImagesFromName
+} = require("./tinify");
 
-const { DROPBOX_ACCESS_TOKEN, TINIFY_KEY } = process.env;
+const { DROPBOX_ACCESS_TOKEN, TINIFY_KEY, PORT } = process.env;
+
+const DEBOUNCE = 1000;
 
 //set credentials
 // const dropbox = dropboxV2Api.authenticate({
@@ -35,26 +44,9 @@ const dropbox = dropboxV2Api.authenticate({
 
 tinify.key = TINIFY_KEY;
 
-// use session ref to call API, i.e.:
-// dropbox(
-//   {
-//     resource: "users/get_account",
-//     parameters: {
-//       account_id: "dbid:AAH4f99T0taONIb-OurWxbNQ6ywGRopQngc"
-//     }
-//   },
-//   (err, result, response) => {
-//     if (err) {
-//       return console.log(err);
-//     }
-//     console.log(result);
-//   }
-// );
+let currentCursor = null;
 
-const createFilename = (name, suffix, ext) =>
-  `${path.parse(name).name}-${suffix}.${ext}`;
-
-let downloadImg = (filePath, name, cursor) => {
+let downloadImg = (filePath, name) => {
   let PNGName = createFilename(name, "0", "png");
   let JPGName = createFilename(name, "0", "jpg");
 
@@ -66,7 +58,7 @@ let downloadImg = (filePath, name, cursor) => {
       }
     },
     (err, result, response) => {
-      console.log(`downloaded ${name}.`);
+      console.log("\033[1;32m", `downloaded ${name}.`, "\033[0m");
     }
   )
     .pipe(fs.createWriteStream(name))
@@ -77,39 +69,23 @@ let downloadImg = (filePath, name, cursor) => {
         .then(function(psd) {
           return psd.image.saveAsPng(PNGName);
         })
-        .then(function(s) {
-          console.log("s");
-          console.log(s);
-          // generateImages(output, name, "png");
-          console.log("Finished png in " + (new Date() - start) + "ms");
+        .then(() => {
+          console.log(
+            "\033[1;34m",
+            "Finished png in " + (new Date() - start) + "ms",
+            "\033[0m"
+          );
+          console.log("\033[1;32m", "generating pngs...", "\033[0m");
+          generateImagesFromName(PNGName, name, "png");
+
           let buffer = fs.readFileSync(PNGName);
           return pngToJpeg({ quality: 90 })(buffer);
         })
         .then(output => {
-          console.log("generating images...");
+          console.log("\033[1;32m", "generating jpegs...", "\033[0m");
           generateImages(output, name, "jpg");
-          poll(cursor);
         });
     });
-};
-
-const generateImages = (output, name, ext) => {
-  [150, 650, 1200].map((size, i) =>
-    tinify
-      .fromBuffer(output)
-      .resize({
-        method: "fit",
-        width: size,
-        height: size
-      })
-      .toBuffer(function(err, resultData) {
-        if (err) throw err;
-        let n = createFilename(name, `${i + 1}`, ext);
-        fs.writeFile(n, resultData, err => {
-          if (!err) console.log(`finished ${i + 1} ${ext}`);
-        });
-      })
-  );
 };
 
 let getMetadata = path =>
@@ -130,135 +106,117 @@ let getMetadata = path =>
     }
   );
 
-let next = cursor =>
-  dropbox(
-    {
-      resource: "files/list_folder/continue",
-      parameters: {
-        cursor
-      }
-    },
-    (err, result) => {
-      console.log("the change is:");
-      console.log(result);
-      let { path_lower, name } = result.entries[0];
-      downloadImg(path_lower, name, cursor);
-      getMetadata(path_lower);
-    }
-  );
+let next = debounce(
+  cursor =>
+    dropbox(
+      {
+        resource: "files/list_folder/continue",
+        parameters: {
+          cursor
+        }
+      },
+      (err, result) => {
+        currentCursor = result.cursor;
 
-dropbox(
-  {
-    resource: "files/list_folder",
-    parameters: {
-      path: "/images",
-      recursive: true,
-      include_media_info: false,
-      include_deleted: false,
-      include_has_explicit_shared_members: false,
-      include_mounted_folders: true
-    }
-  },
-  (err, result) => {
-    console.log("===FILES CURRENTLY IN DROPBOX===");
-    result.entries.map(file => console.log(file.name));
-    poll(result.cursor);
-  }
+        result.entries.map(entry => {
+          let { path_lower, name } = entry;
+          let tag = entry[".tag"];
+          if (tag === "file") {
+            downloadImg(path_lower, name);
+          } else if (tag === "deleted") {
+            console.log(`${path_lower} was deleted on Dropbox.`);
+          } else {
+            console.log(`Could not handle change to ${path_lower}.`);
+          }
+        });
+      }
+    ),
+  DEBOUNCE
 );
 
-let poll = cursor =>
+let listFilesAndPollForChanges = () =>
   dropbox(
     {
-      resource: "files/list_folder/longpoll",
+      resource: "files/list_folder",
       parameters: {
-        cursor: cursor,
-        timeout: 120
+        path: "/images",
+        recursive: true,
+        include_media_info: false,
+        include_deleted: false,
+        include_has_explicit_shared_members: false,
+        include_mounted_folders: true
       }
     },
     (err, result) => {
-      //see docs for `result` parameters
-      console.log("poll");
-      console.log(result);
-      if (err) {
-        return console.log(err);
-      }
-      if (result.changes) {
-        next(cursor);
-      }
+      console.log("\033[0;31m", "===FILES CURRENTLY IN DROPBOX===", "\033[0m");
+      result.entries.map(file => console.log(file.name));
+      poll(result.cursor);
     }
   );
 
-// var dbx = new Dropbox({ accessToken: process.env.DROPBOX_ACCESS_TOKEN });
+let poll = debounce(
+  cursor =>
+    dropbox(
+      {
+        resource: "files/list_folder/longpoll",
+        parameters: {
+          cursor: cursor,
+          timeout: 30
+        }
+      },
+      (err, result) => {
+        if (err) {
+          return console.log(err);
+        }
+        if (result.changes) {
+          next(cursor);
+        }
+      }
+    ),
+  DEBOUNCE
+);
 
-// dbx
-//   .usersGetCurrentAccount()
-//   .then(function(response) {
-//     console.log(response);
-//   })
-//   .catch(function(error) {
-//     console.error(error);
-//   });
+let getInfo = account_id =>
+  dropbox(
+    {
+      resource: "users/get_account",
+      parameters: {
+        account_id
+      }
+    },
+    (err, result) => {
+      console.log(result);
+    }
+  );
 
-// dbx
-//   .filesListFolder({ path: "" })
-//   .then(function(response) {
-//     console.log(response);
-//   })
-//   .catch(function(error) {
-//     console.log(error);
-//   });
+app.use(bodyParser.json());
 
-// app.get("/webhook", (req, res) => {
-//   res.writeHead(200, {
-//     "Content-Type": "text/plain",
-//     "X-Content-Type-Options": "nosniff"
-//   });
-//   res.send(req.query.challenge);
-// });
+app.get("/webhook", (req, res) => {
+  res.writeHead(200, {
+    "Content-Type": "text/plain",
+    "X-Content-Type-Options": "nosniff"
+  });
+  console.log("received challenge");
+  res.end(req.query.challenge);
+});
 
-// app.post("/webhook", (req, res) => {
-//   console.log("received post from dropbox");
-// });
+app.post("/webhook", (req, res) => {
+  console.log("received post request from dropbox");
+  const { accounts } = req.body.list_folder;
 
-// dbx
-//   .sharingGetSharedLinkFile({ url: result.sharedLink })
-//   .then(function(data) {
-//     fs.writeFile(data.name, data.fileBinary, "binary", function(err) {
-//       if (err) {
-//         throw err;
-//       }
-//       console.log("File: " + data.name + " saved.");
-//     });
-//   })
-//   .catch(function(err) {
-//     throw err;
-//   });
-// // Set the headers
-// var headers = {
-//   "User-Agent": "Super Agent/0.0.1",
-//   "Content-Type": "application/x-www-form-urlencoded",
-//   Authorization: `Bearer ${process.env.DROPBOX_ACCESS_TOKEN}`,
-//   "Dropbox-API-Arg": { path: "jose_1_1200px.jpg" }
-// };
+  var compressionsThisMonth = tinify.compressionCount;
+  console.log(`compressions this month ${compressionsThisMonth}`);
 
-// // Configure the request
-// var options = {
-//   url: "https://content.dropboxapi.com/2/files/download",
-//   method: "POST",
-//   headers: headers
-// };
+  if (currentCursor) {
+    poll(currentCursor);
+  } else {
+    listFilesAndPollForChanges();
+  }
+});
 
-// // Start the request
-// request(options, function(error, response, body) {
-//   if (!error && response.statusCode == 200) {
-//     // Print out the response body
-//     console.log(body);
-//   }
-// });
-
-app.listen(port, err => {
+app.listen(PORT, err => {
   if (err) {
     return console.log("something bad happened");
   }
-  console.log(`listening on port ${port}`);
+  console.log(`listening on port ${PORT}`);
 });
