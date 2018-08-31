@@ -14,11 +14,22 @@ const sharp = require("sharp");
 const util = require("util");
 const bodyParser = require("body-parser");
 const debounce = require("lodash/debounce");
+
+const Promise = require("bluebird");
+const gm = require("gm").subClass({ imageMagick: true });
+Promise.promisifyAll(gm.prototype);
+
 const {
   createFilename,
   generateImages,
   generateImagesFromName
 } = require("./tinify");
+const ConvertTiff = require("tiff-to-png");
+const converter = new ConvertTiff({
+  suffix: "source-"
+});
+
+const fs_writeFile = util.promisify(fs.writeFile);
 
 const { DROPBOX_ACCESS_TOKEN, TINIFY_KEY, PORT } = process.env;
 
@@ -47,9 +58,7 @@ tinify.key = TINIFY_KEY;
 let currentCursor = null;
 
 let downloadImg = (filePath, name) => {
-  let PNGName = createFilename(name, "0", "png");
-  let JPGName = createFilename(name, "0", "jpg");
-
+  let PNGName = "source1.png";
   dropbox(
     {
       resource: "files/download",
@@ -63,29 +72,55 @@ let downloadImg = (filePath, name) => {
   )
     .pipe(fs.createWriteStream(name))
     .on("finish", () => {
-      console.log("converting to png...");
+      console.log("converting...");
       var start = new Date();
-      PSD.open(name)
-        .then(function(psd) {
-          return psd.image.saveAsPng(PNGName);
-        })
-        .then(() => {
-          console.log(
-            "\033[1;34m",
-            "Finished png in " + (new Date() - start) + "ms",
-            "\033[0m"
-          );
-          console.log("\033[1;32m", "generating pngs...", "\033[0m");
-          generateImagesFromName(PNGName, name, "png");
+      let ext = path.parse(name).ext;
 
-          let buffer = fs.readFileSync(PNGName);
-          return pngToJpeg({ quality: 90 })(buffer);
-        })
-        .then(output => {
-          console.log("\033[1;32m", "generating jpegs...", "\033[0m");
-          generateImages(output, name, "jpg");
-        });
+      outputImages(name, PNGName, ext);
     });
+};
+
+let generateJPEGs = name => {
+  let buffer = fs.readFileSync(name);
+  pngToJpeg({ quality: 90 })(buffer).then(output => {
+    generateImages(output, name, "jpg");
+  });
+};
+
+let outputImages = (name, PNGName, ext) => {
+  if (ext === ".png") {
+    console.log("\033[1;32m", "generating pngs...", "\033[0m");
+    generateImagesFromName(name, name, "png");
+    generateJPEGs(name);
+  } else if (ext === ".jpg" || ext === ".jpeg") {
+    console.log("\033[1;32m", "generating jpgs...", "\033[0m");
+    generateImagesFromName(name, name, "jpg");
+    gm(name)
+      .writeAsync(PNGName)
+      .then(function(output) {
+        console.log(output);
+        console.log("finished png file");
+        console.log("\033[1;32m", "generating pngs...", "\033[0m");
+        generateImagesFromName(PNGName, name, "png");
+      })
+      .catch(function(err) {
+        console.log(err);
+      });
+  } else if (ext === ".tiff" || ext === ".tif") {
+    converter.convertOne(name, ".").then(() => {
+      generateImagesFromName(PNGName, name, "png");
+      generateJPEGs(PNGName);
+    });
+  } else if (ext === ".psd") {
+    PSD.open(name)
+      .then(function(psd) {
+        return psd.image.saveAsPng(PNGName);
+      })
+      .then(() => {
+        generateImagesFromName(PNGName, name, "png");
+        generateJPEGs(PNGName);
+      });
+  }
 };
 
 let getMetadata = path =>
