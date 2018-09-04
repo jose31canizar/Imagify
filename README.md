@@ -23,38 +23,38 @@ From S3, the links to each image can be used through CDN.
 
   2. Install Dependencies
 
-    ### CentOS
-    ```
-    yum install GraphicsMagick
-    yum install ImageMagick
-    ```
+  ### CentOS
+  ```
+  yum install GraphicsMagick
+  yum install ImageMagick
+  ```
 
-    ### MacOSX
-    ```
-    brew install graphicsmagick
-    brew install imagemagick
-    ```
+  ### MacOSX
+  ```
+  brew install graphicsmagick
+  brew install imagemagick
+  ```
 
-    ```
-    yarn install
-    ```
+  ```
+  yarn install
+  ```
 
   3. Write Credentials
 
-    Create a .env file with appropriate parameters
+  Create a .env file with appropriate parameters
 
-    ```
-    PORT
-    DROPBOX_ACCESS_TOKEN
-    TINIFY_KEY
-    FIREBASE_API_KEY
-    FIREBASE_AUTH_DOMAIN
-    FIREBASE_DB_URL
-    FIREBASE_PROJECT_ID
-    FIREBASE_STORAGE_BUCKET
-    FIREBASE_SENDER_ID
-    AWS_ACCESS_KEY_ID
-    AWS_SECRET_ACCESS_KEY
-    AWS_REGION
-    AWS_PATH
-    ```
+  ```
+  PORT
+  DROPBOX_ACCESS_TOKEN
+  TINIFY_KEY
+  FIREBASE_API_KEY
+  FIREBASE_AUTH_DOMAIN
+  FIREBASE_DB_URL
+  FIREBASE_PROJECT_ID
+  FIREBASE_STORAGE_BUCKET
+  FIREBASE_SENDER_ID
+  AWS_ACCESS_KEY_ID
+  AWS_SECRET_ACCESS_KEY
+  AWS_REGION
+  AWS_PATH
+  ```
