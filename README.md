@@ -22,11 +22,13 @@ From S3, the links to each image can be used through CDN.
     ```git clone https://github.com/jose31canizar/Imagify.git```
 
   2. Install Dependencies
+
     ### CentOS
     ```
     yum install GraphicsMagick
     yum install ImageMagick
     ```
+
     ### MacOSX
     ```
     brew install graphicsmagick
@@ -38,7 +40,10 @@ From S3, the links to each image can be used through CDN.
     ```
 
   3. Write Credentials
+
     Create a .env file with appropriate parameters
+
+    ```
     PORT
     DROPBOX_ACCESS_TOKEN
     TINIFY_KEY
@@ -52,3 +57,4 @@ From S3, the links to each image can be used through CDN.
     AWS_SECRET_ACCESS_KEY
     AWS_REGION
     AWS_PATH
+    ```
