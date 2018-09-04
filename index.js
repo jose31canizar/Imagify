@@ -14,6 +14,7 @@ const sharp = require("sharp");
 const util = require("util");
 const bodyParser = require("body-parser");
 const debounce = require("lodash/debounce");
+const { db } = require("./firebase");
 
 const Promise = require("bluebird");
 const gm = require("gm").subClass({ imageMagick: true });
@@ -67,7 +68,7 @@ let downloadImg = (filePath, name) => {
       }
     },
     (err, result, response) => {
-      console.log("\033[1;32m", `downloaded ${name}.`, "\033[0m");
+      console.log("\033[1;36m", `downloaded ${name}.`, "\033[0m");
     }
   )
     .pipe(fs.createWriteStream(name))
@@ -80,8 +81,8 @@ let downloadImg = (filePath, name) => {
     });
 };
 
-let generateJPEGs = name => {
-  let buffer = fs.readFileSync(name);
+let generateJPEGs = (PNGName, name) => {
+  let buffer = fs.readFileSync(PNGName);
   pngToJpeg({ quality: 90 })(buffer).then(output => {
     generateImages(output, name, "jpg");
   });
@@ -89,18 +90,13 @@ let generateJPEGs = name => {
 
 let outputImages = (name, PNGName, ext) => {
   if (ext === ".png") {
-    console.log("\033[1;32m", "generating pngs...", "\033[0m");
     generateImagesFromName(name, name, "png");
-    generateJPEGs(name);
+    generateJPEGs(name, name);
   } else if (ext === ".jpg" || ext === ".jpeg") {
-    console.log("\033[1;32m", "generating jpgs...", "\033[0m");
     generateImagesFromName(name, name, "jpg");
     gm(name)
       .writeAsync(PNGName)
-      .then(function(output) {
-        console.log(output);
-        console.log("finished png file");
-        console.log("\033[1;32m", "generating pngs...", "\033[0m");
+      .then(function() {
         generateImagesFromName(PNGName, name, "png");
       })
       .catch(function(err) {
@@ -109,7 +105,7 @@ let outputImages = (name, PNGName, ext) => {
   } else if (ext === ".tiff" || ext === ".tif") {
     converter.convertOne(name, ".").then(() => {
       generateImagesFromName(PNGName, name, "png");
-      generateJPEGs(PNGName);
+      generateJPEGs(PNGName, name);
     });
   } else if (ext === ".psd") {
     PSD.open(name)
@@ -118,7 +114,7 @@ let outputImages = (name, PNGName, ext) => {
       })
       .then(() => {
         generateImagesFromName(PNGName, name, "png");
-        generateJPEGs(PNGName);
+        generateJPEGs(PNGName, name);
       });
   }
 };
@@ -136,8 +132,17 @@ let getMetadata = path =>
       if (err) {
         return console.log("err:", err);
       }
-      console.log("metadata:");
+
       console.log(result);
+
+      const { id, name, rev, size, content_hash } = result;
+      db.ref("images/" + id).set({
+        id,
+        name,
+        rev,
+        size,
+        content_hash
+      });
     }
   );
 
@@ -158,6 +163,7 @@ let next = debounce(
           let tag = entry[".tag"];
           if (tag === "file") {
             downloadImg(path_lower, name);
+            getMetadata(path_lower);
           } else if (tag === "deleted") {
             console.log(`${path_lower} was deleted on Dropbox.`);
           } else {
@@ -247,6 +253,7 @@ app.post("/webhook", (req, res) => {
   } else {
     listFilesAndPollForChanges();
   }
+  return "good";
 });
 
 app.listen(PORT, err => {

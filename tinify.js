@@ -13,6 +13,7 @@ const createFilename = (name, suffix, ext) =>
   `${path.parse(name).name}-${suffix}.${ext}`;
 
 const generateImagesFromName = (fname, name, ext) => {
+  console.log("\033[1;34m", `generating ${ext}s...`, "\033[0m");
   [150, 650, 1200].map((size, i) =>
     tinify
       .fromFile(fname)
@@ -21,17 +22,18 @@ const generateImagesFromName = (fname, name, ext) => {
         width: size,
         height: size
       })
-      .toBuffer(function(err, resultData) {
-        if (err) throw err;
-        let n = createFilename(name, `${i + 1}`, ext);
-        fs.writeFile(n, resultData, err => {
-          if (!err) console.log(`finished ${n}`);
-        });
+      .store({
+        service: "s3",
+        aws_access_key_id: AWS_ACCESS_KEY_ID,
+        aws_secret_access_key: AWS_SECRET_ACCESS_KEY,
+        region: AWS_REGION,
+        path: `${AWS_PATH}/${createFilename(name, `${i + 1}`, ext)}`
       })
   );
 };
 
 const generateImages = (output, name, ext) => {
+  console.log("\033[1;34m", `generating ${ext}s...`, "\033[0m");
   [150, 650, 1200].map(
     (size, i) =>
       tinify
@@ -41,19 +43,20 @@ const generateImages = (output, name, ext) => {
           width: size,
           height: size
         })
-        .toBuffer(function(err, resultData) {
-          if (err) throw err;
-          let n = createFilename(name, `${i + 1}`, ext);
-          fs.writeFile(n, resultData, err => {
-            if (!err) console.log(`finished ${n}`);
-          });
+        .store({
+          service: "s3",
+          aws_access_key_id: AWS_ACCESS_KEY_ID,
+          aws_secret_access_key: AWS_SECRET_ACCESS_KEY,
+          region: AWS_REGION,
+          path: `${AWS_PATH}/${createFilename(name, `${i + 1}`, ext)}`
         })
-    // .store({
-    //   service: "s3",
-    //   aws_access_key_id: AWS_ACCESS_KEY_ID,
-    //   aws_secret_access_key: AWS_SECRET_ACCESS_KEY,
-    //   region: AWS_REGION,
-    //   path: AWS_PATH
+
+    // .toBuffer(function(err, resultData) {
+    //   if (err) throw err;
+    //   let n = createFilename(name, `${i + 1}`, ext);
+    //   fs.writeFile(n, resultData, err => {
+    //     if (!err) console.log("\033[1;32m", `finished ${n}`, "\033[0m");
+    //   });
     // })
   );
 };
