@@ -152,9 +152,6 @@ let getMetadata = (filePath, name) =>
               const { description, subject: keywords } = metadata;
               let desc = description ? description : null;
               let keys = keywords ? keywords : null;
-              console.log(metadata);
-
-              console.log(keys);
 
               if (/^\d+$/.test(n) && n.length === 13) {
                 ean = n;
