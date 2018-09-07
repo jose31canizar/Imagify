@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev": "./node_modules/.bin/nodemon index.js",
-    "start": "node index.js"
+    "start": "node --max_old_space_size=4096 index.js"
   },
   "dependencies": {
     "body-parser": "^1.18.3",

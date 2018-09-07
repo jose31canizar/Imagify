@@ -119,13 +119,14 @@ let outputImages = (name, PNGName, ext) => {
   }
 };
 
-let getMetadata = path =>
+let getMetadata = filePath =>
   dropbox(
     {
       resource: "files/get_metadata",
       parameters: {
-        path,
-        include_media_info: true
+        path: filePath,
+        include_media_info: true,
+        include_has_explicit_shared_members: true
       }
     },
     (err, result, response) => {
@@ -133,12 +134,21 @@ let getMetadata = path =>
         return console.log("err:", err);
       }
 
-      console.log(result);
-
       const { id, name, rev, size, content_hash } = result;
+
+      let n = path.parse(name).name;
+      let ean = null;
+
+      if (/^\d+$/.test(n) && n.length === 13) {
+        console.log("official ean number");
+
+        ean = n;
+      }
+
       db.ref("images/" + id).set({
         id,
         name,
+        ean,
         rev,
         size,
         content_hash
@@ -190,6 +200,7 @@ let listFilesAndPollForChanges = () =>
     },
     (err, result) => {
       console.log("\033[0;31m", "===FILES CURRENTLY IN DROPBOX===", "\033[0m");
+
       result.entries.map(file => console.log(file.name));
       poll(result.cursor);
     }
