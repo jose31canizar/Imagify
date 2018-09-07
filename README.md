@@ -27,12 +27,14 @@ From S3, the links to each image can be used through CDN.
   ```
   yum install GraphicsMagick
   yum install ImageMagick
+  yum install perl-Image-ExifTool
   ```
 
   ### MacOSX
   ```
   brew install graphicsmagick
   brew install imagemagick
+  brew install exiftool
   ```
 
   ```

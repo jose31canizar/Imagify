@@ -15,6 +15,7 @@ const util = require("util");
 const bodyParser = require("body-parser");
 const debounce = require("lodash/debounce");
 const { db } = require("./firebase");
+var exif = require("exiftool");
 
 const Promise = require("bluebird");
 const gm = require("gm").subClass({ imageMagick: true });
@@ -73,7 +74,9 @@ let downloadImg = (filePath, name) => {
   )
     .pipe(fs.createWriteStream(name))
     .on("finish", () => {
-      console.log("converting...");
+      console.log("retrieving metadata...");
+      getMetadata(filePath, name);
+
       var start = new Date();
       let ext = path.parse(name).ext;
 
@@ -119,7 +122,7 @@ let outputImages = (name, PNGName, ext) => {
   }
 };
 
-let getMetadata = filePath =>
+let getMetadata = (filePath, name) =>
   dropbox(
     {
       resource: "files/get_metadata",
@@ -139,19 +142,37 @@ let getMetadata = filePath =>
       let n = path.parse(name).name;
       let ean = null;
 
-      if (/^\d+$/.test(n) && n.length === 13) {
-        console.log("official ean number");
+      //retrieving EAN number
+      fs.readFile(name, ["-subject", "-description"], function(err, data) {
+        if (err) throw err;
+        else {
+          exif.metadata(data, function(err, metadata) {
+            if (err) throw err;
+            else {
+              const { description, subject: keywords } = metadata;
+              let desc = description ? description : null;
+              let keys = keywords ? keywords : null;
+              console.log(metadata);
 
-        ean = n;
-      }
+              console.log(keys);
 
-      db.ref("images/" + id).set({
-        id,
-        name,
-        ean,
-        rev,
-        size,
-        content_hash
+              if (/^\d+$/.test(n) && n.length === 13) {
+                ean = n;
+              } else {
+                ean = desc;
+              }
+              db.ref("images/" + id).set({
+                id,
+                name,
+                ean,
+                keywords: keys,
+                rev,
+                size,
+                content_hash
+              });
+            }
+          });
+        }
       });
     }
   );
@@ -173,7 +194,6 @@ let next = debounce(
           let tag = entry[".tag"];
           if (tag === "file") {
             downloadImg(path_lower, name);
-            getMetadata(path_lower);
           } else if (tag === "deleted") {
             console.log(`${path_lower} was deleted on Dropbox.`);
           } else {
