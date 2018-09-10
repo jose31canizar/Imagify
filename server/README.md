@@ -60,3 +60,19 @@ From S3, the links to each image can be used through CDN.
   AWS_REGION
   AWS_PATH
   ```
+
+## Cost
+
+  ###TinyPNG
+  I use TinyPNG to convert and compress the uploaded image into 6 different versions of itself for web shops.
+  ```
+  First 500 Free,
+  Next 9 500 image compressions$0.009 per image,
+  After 10 000 image compressions$0.002 per image
+  ```
+
+  ### AWS SQS
+  The first million requests are free, after that it's
+  ```
+  $0.40 ($0.00000040 per request)
+  ```

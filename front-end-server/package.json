@@ -1,0 +1,22 @@
+{
+  "name": "front-end-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "./node_modules/.bin/nodemon index.js",
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.310.0",
+    "dotenv": "^6.0.0",
+    "easy-sqs": "^0.5.3",
+    "express": "^4.16.3",
+    "nodemon": "^1.18.4",
+    "path": "^0.12.7",
+    "socket.io": "^2.1.1"
+  }
+}

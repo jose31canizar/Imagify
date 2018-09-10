@@ -1,0 +1,36 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.0",
+      "eventSource": "aws:s3",
+      "awsRegion": "us-east-1",
+      "eventTime": "2018-09-07T13:49:58.909Z",
+      "eventName": "ObjectCreated:Put",
+      "userIdentity": { "principalId": "AWS:AIDAJZEHR5HMJCGUFWLDQ" },
+      "requestParameters": { "sourceIPAddress": "35.205.240.143" },
+      "responseElements": {
+        "x-amz-request-id": "33BDEEFC9BE9CF5E",
+        "x-amz-id-2": "21fHnS7eCZYlAlaQWYsLpjYefK8QQFIB++ypNmdNTLyLsuEtqqgr1vNwLzIaaKADAuIFfyDmVyA="
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "NewImage",
+        "bucket": {
+          "name": "picapoint-imagify",
+          "ownerIdentity": { "principalId": "A3A7LB7RG8YCQP" },
+          "arn": "arn:aws:s3:::picapoint-imagify"
+        },
+        "object": {
+          "key": "4569823658999-2.png",
+          "size": 99823,
+          "eTag": "9d8283d71f0a46e4ed915aa5d4ca88be",
+          "sequencer": "005B928206CBB9439C"
+        }
+      }
+    }
+  ]
+}
+
+
+{"Records":
+[{"eventVersion":"2.0","eventSource":"aws:s3","awsRegion":"us-east-1","eventTime":"2018-09-10T07:39:03.544Z","eventName":"ObjectCreated:Put","userIdentity":{"principalId":"AWS:AIDAJZEHR5HMJCGUFWLDQ"},"requestParameters":{"sourceIPAddress":"35.240.24.2"},"responseElements":{"x-amz-request-id":"77BD8CC2DE91F559","x-amz-id-2":"Jfxm6lmAonzWYRF+cTpmuIjjrv7PYxWOQOKzourk1xG+NqBhJHEQ98siFrk3Fi7/P487BdByjfk="},"s3":{"s3SchemaVersion":"1.0","configurationId":"NewImage","bucket":{"name":"picapoint-imagify","ownerIdentity":{"principalId":"A3A7LB7RG8YCQP"},"arn":"arn:aws:s3:::picapoint-imagify"},"object":{"key":"AL3A56%2B%2BMod.%2BX3-2-3.jpg","size":62595,"eTag":"2f0e47dd36fc25e220781cb80c56e749","sequencer":"005B961F9776207F0A"}}}]}

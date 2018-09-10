@@ -29,6 +29,12 @@ const generateImagesFromName = (fname, name, ext) => {
         region: AWS_REGION,
         path: `${AWS_PATH}/${createFilename(name, `${i + 1}`, ext)}`
       })
+      .meta()
+      .then(uploads => {
+        console.log("GENERATE IMAGE FROM NAME UPLOADS");
+
+        console.log(uploads);
+      })
   );
 };
 
@@ -49,6 +55,12 @@ const generateImages = (output, name, ext) => {
           aws_secret_access_key: AWS_SECRET_ACCESS_KEY,
           region: AWS_REGION,
           path: `${AWS_PATH}/${createFilename(name, `${i + 1}`, ext)}`
+        })
+        .meta()
+        .then(uploads => {
+          console.log("GENERATE IMAGE FROM NAME UPLOADS");
+
+          console.log(uploads);
         })
 
     // .toBuffer(function(err, resultData) {

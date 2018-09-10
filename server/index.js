@@ -58,6 +58,7 @@ const dropbox = dropboxV2Api.authenticate({
 tinify.key = TINIFY_KEY;
 
 let currentCursor = null;
+let lock = false;
 
 let downloadImg = (filePath, name) => {
   let PNGName = "source1.png";
@@ -84,31 +85,26 @@ let downloadImg = (filePath, name) => {
     });
 };
 
-let generateJPEGs = (PNGName, name) => {
-  let buffer = fs.readFileSync(PNGName);
-  pngToJpeg({ quality: 90 })(buffer).then(output => {
-    generateImages(output, name, "jpg");
-  });
+const switchName = (name, ext) => `${path.parse(name).name}${ext}`;
+
+let produce = (sourceName, name, from, to) => {
+  generateImagesFromName(sourceName, name, from);
+  gm(sourceName)
+    .flatten()
+    .writeAsync(switchName(name, to))
+    .then(function() {
+      generateImagesFromName(switchName(name, to), name, to);
+    });
 };
 
 let outputImages = (name, PNGName, ext) => {
   if (ext === ".png") {
-    generateImagesFromName(name, name, "png");
-    generateJPEGs(name, name);
-  } else if (ext === ".jpg" || ext === ".jpeg") {
-    generateImagesFromName(name, name, "jpg");
-    gm(name)
-      .writeAsync(PNGName)
-      .then(function() {
-        generateImagesFromName(PNGName, name, "png");
-      })
-      .catch(function(err) {
-        console.log(err);
-      });
+    produce(name, name, "png", "jpg");
+  } else if (ext === ".jpg" || ext === ".jpeg" || ext === ".JPG") {
+    produce(name, name, "jpg", "png");
   } else if (ext === ".tiff" || ext === ".tif") {
     converter.convertOne(name, ".").then(() => {
-      generateImagesFromName(PNGName, name, "png");
-      generateJPEGs(PNGName, name);
+      produce(PNGName, name, "png", "jpg");
     });
   } else if (ext === ".psd") {
     PSD.open(name)
@@ -116,8 +112,7 @@ let outputImages = (name, PNGName, ext) => {
         return psd.image.saveAsPng(PNGName);
       })
       .then(() => {
-        generateImagesFromName(PNGName, name, "png");
-        generateJPEGs(PNGName, name);
+        produce(PNGName, name, "png", "jpg");
       });
   }
 };
@@ -216,9 +211,11 @@ let listFilesAndPollForChanges = () =>
       }
     },
     (err, result) => {
-      console.log("\033[0;31m", "===FILES CURRENTLY IN DROPBOX===", "\033[0m");
+      console.log("\033[1;34m", "===FILES CURRENTLY IN DROPBOX===", "\033[0m");
 
       result.entries.map(file => console.log(file.name));
+      console.log(result.cursor);
+
       poll(result.cursor);
     }
   );
@@ -269,6 +266,8 @@ app.get("/webhook", (req, res) => {
   res.end(req.query.challenge);
 });
 
+listFilesAndPollForChanges();
+
 app.post("/webhook", (req, res) => {
   console.log("received post request from dropbox");
   const { accounts } = req.body.list_folder;
@@ -276,11 +275,8 @@ app.post("/webhook", (req, res) => {
   var compressionsThisMonth = tinify.compressionCount;
   console.log(`compressions this month ${compressionsThisMonth}`);
 
-  if (currentCursor) {
-    poll(currentCursor);
-  } else {
-    listFilesAndPollForChanges();
-  }
+  poll(currentCursor);
+
   return "good";
 });
 
