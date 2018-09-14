@@ -31,9 +31,11 @@ const generateImagesFromName = (fname, name, ext) => {
       })
       .meta()
       .then(uploads => {
-        console.log("GENERATE IMAGE FROM NAME UPLOADS");
-
-        console.log(uploads);
+        console.log(
+          "\033[1;36m",
+          `${uploads.location} is available on S3.`,
+          "\033[0m"
+        );
       })
   );
 };
@@ -58,9 +60,11 @@ const generateImages = (output, name, ext) => {
         })
         .meta()
         .then(uploads => {
-          console.log("GENERATE IMAGE FROM NAME UPLOADS");
-
-          console.log(uploads);
+          console.log(
+            "\033[1;36m",
+            `${uploads.location} is available on S3.`,
+            "\033[0m"
+          );
         })
 
     // .toBuffer(function(err, resultData) {

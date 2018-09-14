@@ -1,0 +1,3 @@
+import React from "react"
+export const SyncIcon = ({fill, stroke, width, height }) =>
+<svg viewBox="0 0 24 24" width={width} height={height || 'auto'}><path fill={fill} stroke={stroke} d="M15.324 4.445a8.25 8.25 0 0 0-5.808-.324 8.237 8.237 0 0 0-5.762 8.41l-2.488.164A10.733 10.733 0 0 1 17.098 2.551L19.484 0l.637 7.074-7.492.25zm-.094 17.813c-1.05.328-2.14.496-3.222.496-1.766 0-3.52-.457-5.102-1.309L4.516 24l-.633-7.074 7.488-.25-2.691 2.879a8.25 8.25 0 0 0 11.566-8.086l2.484-.164a10.729 10.729 0 0 1-7.5 10.953z" fillRule="evenodd"/></svg>

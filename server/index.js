@@ -85,10 +85,9 @@ let downloadImg = (filePath, name) => {
     });
 };
 
-const switchName = (name, ext) => `${path.parse(name).name}${ext}`;
+const switchName = (name, ext) => `${path.parse(name).name}.${ext}`;
 
-let produce = (sourceName, name, from, to) => {
-  generateImagesFromName(sourceName, name, from);
+let produceSet = (sourceName, name, to) => {
   gm(sourceName)
     .flatten()
     .writeAsync(switchName(name, to))
@@ -97,15 +96,19 @@ let produce = (sourceName, name, from, to) => {
     });
 };
 
+let produce = (sourceName, name, from, to) => {
+  generateImagesFromName(sourceName, name, from);
+  produceSet(sourceName, name, to);
+};
+
 let outputImages = (name, PNGName, ext) => {
   if (ext === ".png") {
     produce(name, name, "png", "jpg");
   } else if (ext === ".jpg" || ext === ".jpeg" || ext === ".JPG") {
     produce(name, name, "jpg", "png");
   } else if (ext === ".tiff" || ext === ".tif") {
-    converter.convertOne(name, ".").then(() => {
-      produce(PNGName, name, "png", "jpg");
-    });
+    produceSet(name, name, "png");
+    produceSet(name, name, "jpg");
   } else if (ext === ".psd") {
     PSD.open(name)
       .then(function(psd) {
@@ -220,27 +223,24 @@ let listFilesAndPollForChanges = () =>
     }
   );
 
-let poll = debounce(
-  cursor =>
-    dropbox(
-      {
-        resource: "files/list_folder/longpoll",
-        parameters: {
-          cursor: cursor,
-          timeout: 30
-        }
-      },
-      (err, result) => {
-        if (err) {
-          return console.log(err);
-        }
-        if (result.changes) {
-          next(cursor);
-        }
+let poll = cursor =>
+  dropbox(
+    {
+      resource: "files/list_folder/longpoll",
+      parameters: {
+        cursor: cursor,
+        timeout: 30
       }
-    ),
-  DEBOUNCE
-);
+    },
+    (err, result) => {
+      if (err) {
+        return console.log(err);
+      }
+      if (result.changes) {
+        next(cursor);
+      }
+    }
+  );
 
 let getInfo = account_id =>
   dropbox(

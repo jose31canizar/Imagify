@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import SocketIO from "socket.io-client";
 import pathParse from "path-parse";
+import { SyncIcon } from "./sync.icon.js"
+import './styles.css'
 
 let imageStyle = { height: "50px" };
 let groupStyle = {
@@ -30,6 +32,7 @@ class App extends Component {
     const socket = SocketIO(`http://localhost:${PORT}`);
     this.state = {
       socket,
+      syncState: "off",
       messages: new Set(),
       startMessage: "Waiting for messages from SQS..."
     };
@@ -42,9 +45,11 @@ class App extends Component {
           : prev.messages.add(message)
       }))
     );
+    this.state.socket.on("connect", () => this.setState({ syncState: 'on'}))
+    this.state.socket.on("disconnect", () => this.setState({ syncState: 'off'}))
   }
   render() {
-    const { messages, startMessage } = this.state;
+    const { messages, startMessage, syncState } = this.state;
 
     let groups = [];
 
@@ -63,8 +68,9 @@ class App extends Component {
     }, {});
 
     return (
-      <div>
-        <h1>Imagify</h1>
+      <div className="app">
+        <span><h1>Imagify</h1><SyncIcon width={'1.5rem'} fill={syncState === "off" ? "#ffa0a0" : "#49bd6d"}/></span>
+
         {messages.size !== 0 ? (
           Object.entries(sortedMessages).map((group, i) => (
             <div className="group" style={groupStyle}>

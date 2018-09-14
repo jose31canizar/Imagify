@@ -1,0 +1,46 @@
+@font-face {
+    font-family: Radikal;
+    src: url('./fonts/Radikal.woff') format('woff'),
+         url('./fonts/Radikal.ttf') format('ttf'),
+         url('./fonts/Radikal.eot') format('eot'),
+         url('./fonts/Radikal.otf') format('otf');
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.app {
+  padding: 2rem;
+}
+
+p,h1,h2,h3,h4,h5,h6,span,label,li,a {
+    font-family: Radikal, Helvetica, sans-serif;
+  }
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes plop {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+img {
+  animation: plop 0.14s ease-in;
+}
+svg {
+  animation: spin 2s linear infinite;
+}
+
